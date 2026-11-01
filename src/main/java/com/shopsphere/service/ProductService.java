@@ -2,6 +2,10 @@ package com.shopsphere.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.shopsphere.dto.ProductRequestDto;
@@ -51,13 +55,6 @@ public class ProductService {
 	}
 	
 	
-	public List<ProductResponseDto> getAllProducts(){
-		return productRepository.findAll()
-				.stream()
-				.map(product -> mapToResponse(product))
-				.toList();
-	}
-	
 	
 	public ProductResponseDto getProductById(Long id) {
 		Product product=productRepository.findById(id)
@@ -89,7 +86,26 @@ public class ProductService {
         productRepository.delete(product);
     }
 	
-	
+	public Page<ProductResponseDto> getAllProducts(int page,int size,String sortBy,String direction){
+		
+		if(page<0) {
+			throw new IllegalArgumentException("Page number cannot be negative");
+		}
+		if(size<1||size>100) {
+			throw new IllegalArgumentException("Page size must be between 1 and 100");
+		}
+		if(!List.of("id","name","price","stockQuantity").contains(sortBy)) {
+			throw new IllegalArgumentException("Invalid sorting field: " + sortBy);
+		}
+		if(!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
+			throw new IllegalArgumentException("Direction must be either asc or desc");
+		}
+		
+		Sort sort=direction.equalsIgnoreCase("desc")?Sort.by(sortBy).descending():Sort.by(sortBy).ascending();
+		Pageable pageable=PageRequest.of(page, size,sort);
+		Page<Product> products=productRepository.findAll(pageable);
+		return products.map(product-> mapToResponse(product));
+	}
 	
 	
 }
