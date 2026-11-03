@@ -10,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolationException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 	
@@ -47,13 +49,32 @@ public class GlobalExceptionHandler {
 	}
 	
 	@ExceptionHandler(IllegalArgumentException.class)
-		public ResponseEntity<Map<String,Object>> handleIllegalArgumnet(IllegalArgumentException ex){
-			Map<String,Object> response=new HashMap<>();
-			response.put("timestamp", LocalDateTime.now());
-			response.put("status", 400);
-			response.put("error", "Bad Request");
-			response.put("message", ex.getMessage());
-			
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-		}
+	public ResponseEntity<Map<String,Object>> handleIllegalArgumnet(IllegalArgumentException ex){
+		Map<String,Object> response=new HashMap<>();
+		response.put("timestamp", LocalDateTime.now());
+		response.put("status", 400);
+		response.put("error", "Bad Request");
+		response.put("message", ex.getMessage());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+	}
+	@ExceptionHandler(ConstraintViolationException.class)
+	public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+	        ConstraintViolationException ex) {
+
+	    Map<String, Object> response = new HashMap<>();
+
+	    response.put("timestamp", LocalDateTime.now());
+	    response.put("status", 400);
+	    response.put("error", "Bad Request");
+
+	    response.put(
+	        "message",
+	        ex.getConstraintViolations()
+	          .stream()
+	          .map(violation -> violation.getMessage())
+	          .toList()
+	    );
+
+	    return ResponseEntity.badRequest().body(response);
+	}
 }

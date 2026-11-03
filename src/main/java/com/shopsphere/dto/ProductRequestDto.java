@@ -24,6 +24,11 @@ public class ProductRequestDto {
     @DecimalMin(value = "0", message = "Stock quantity cannot be negative")
 	private Integer stockQuantity;
 	
+	@NotNull(message = "Category ID is required")
+	private Long categoryId;
+	
+	@NotNull(message="Brand ID is required")
+	private Long brandId;
 	
 	public ProductRequestDto() {
 	}
@@ -66,6 +71,26 @@ public class ProductRequestDto {
 
 	public void setStockQuantity(Integer stockQuantity) {
 		this.stockQuantity = stockQuantity;
+	}
+
+
+	public Long getCategoryId() {
+		return categoryId;
+	}
+
+
+	public void setCategoryId(Long categoryId) {
+		this.categoryId = categoryId;
+	}
+
+
+	public Long getBrandId() {
+		return brandId;
+	}
+
+
+	public void setBrandId(Long brandId) {
+		this.brandId = brandId;
 	}
 	
 	

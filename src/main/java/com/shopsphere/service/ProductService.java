@@ -1,5 +1,6 @@
 package com.shopsphere.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -10,8 +11,12 @@ import org.springframework.stereotype.Service;
 
 import com.shopsphere.dto.ProductRequestDto;
 import com.shopsphere.dto.ProductResponseDto;
+import com.shopsphere.entity.Brand;
+import com.shopsphere.entity.Category;
 import com.shopsphere.entity.Product;
 import com.shopsphere.exception.ResourceNotFoundException;
+import com.shopsphere.repository.BrandRepository;
+import com.shopsphere.repository.CategoryRepository;
 import com.shopsphere.repository.ProductRepository;
 
 
@@ -19,9 +24,17 @@ import com.shopsphere.repository.ProductRepository;
 public class ProductService {
 
 	private final ProductRepository productRepository;
+	private final CategoryRepository categoryRepository;
+	private final BrandRepository brandRepository;
 	
-	public ProductService(ProductRepository productRepository) {
-		this.productRepository = productRepository;
+	public ProductService(
+	        ProductRepository productRepository,
+	        CategoryRepository categoryRepository,
+	        BrandRepository brandRepository) {
+
+	    this.productRepository = productRepository;
+	    this.categoryRepository = categoryRepository;
+	    this.brandRepository = brandRepository;
 	}
 	
 	private ProductResponseDto mapToResponse(Product product) {
@@ -30,17 +43,30 @@ public class ProductService {
                 product.getName(),
                 product.getDescription(),
                 product.getPrice(),
-                product.getStockQuantity()
+                product.getStockQuantity(),
+                product.getCategory().getId(),
+                product.getCategory().getName(),
+                product.getBrand().getId(),
+                product.getBrand().getName()
 		);
 	}
 	
 	private Product mapToEntity(ProductRequestDto dto) {
+		
+		Category category=categoryRepository.findById(dto.getCategoryId())
+				.orElseThrow(()-> new ResourceNotFoundException("Category not found with ID: " + dto.getCategoryId()));
+		
+		Brand brand=brandRepository.findById(dto.getBrandId())
+				.orElseThrow(()-> new ResourceNotFoundException("Brand not found with id: " + dto.getBrandId()));
+		
 		Product product=new Product();
 		
 		product.setName(dto.getName());
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setStockQuantity(dto.getStockQuantity());
+        product.setCategory(category);
+        product.setBrand(brand);
         
         return product;
 	}
@@ -107,5 +133,27 @@ public class ProductService {
 		return products.map(product-> mapToResponse(product));
 	}
 	
+	public List<ProductResponseDto> searchProducts(String name){
+		List<Product> products=productRepository.searchProductsByName(name);
+		
+		return products.stream().map(product->mapToResponse(product)).toList();
+	}
+	
+	public List<ProductResponseDto> filterProducts(BigDecimal minPrice, BigDecimal maxPrice){
+		List<Product> products=productRepository.findByPriceBetween(minPrice, maxPrice);
+		return products.stream().map(product->mapToResponse(product)).toList();
+	}
+	
+	public List<ProductResponseDto> getProductsByCategory(Long categoryId){
+		if(!categoryRepository.existsById(categoryId)) {
+			throw new ResourceNotFoundException("Category not found with ID: " + categoryId);
+		}
+		
+		List<Product> products=productRepository.findByCategoryId(categoryId);
+		return products.stream()
+	            .map(this::mapToResponse)
+	            .toList();
+		
+	}
 	
 }
